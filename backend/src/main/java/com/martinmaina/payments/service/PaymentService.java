@@ -3,8 +3,8 @@ package com.martinmaina.payments.service;
 import java.security.SecureRandom;
 import java.util.Optional;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
 
 import com.martinmaina.payments.dto.CreatePaymentRequest;
 import com.martinmaina.payments.dto.PaymentResponse;
@@ -29,17 +29,13 @@ public class PaymentService {
         this.paymentRepository = paymentRepository;
     }
 
-    @Transactional
     public CreateResult create(CreatePaymentRequest request) {
         String currency = request.currency() != null ? request.currency() : DEFAULT_CURRENCY;
 
         // A repeated request returns the first payment instead of creating a second one
         Optional<Payment> existing = paymentRepository.findByMerchantReference(request.merchantReference());
         if (existing.isPresent()) {
-            if (hasSameDetails(existing.get(), request, currency)) {
-                return new CreateResult(PaymentResponse.from(existing.get()), false);
-            }
-            throw new DuplicatePaymentException(request.merchantReference());
+            return resolveDuplicate(existing.get(), request, currency);
         }
 
         Payment payment = new Payment(
@@ -49,8 +45,22 @@ public class PaymentService {
                 currency,
                 request.payerPhone());
 
-        Payment saved = paymentRepository.save(payment);
-        return new CreateResult(PaymentResponse.from(saved), true);
+        try {
+            Payment saved = paymentRepository.save(payment);
+            return new CreateResult(PaymentResponse.from(saved), true);
+        } catch (DataIntegrityViolationException e) {
+            // Another request with the same merchant reference was saved first
+            Payment first = paymentRepository.findByMerchantReference(request.merchantReference())
+                    .orElseThrow(() -> e);
+            return resolveDuplicate(first, request, currency);
+        }
+    }
+
+    private CreateResult resolveDuplicate(Payment existing, CreatePaymentRequest request, String currency) {
+        if (hasSameDetails(existing, request, currency)) {
+            return new CreateResult(PaymentResponse.from(existing), false);
+        }
+        throw new DuplicatePaymentException(request.merchantReference());
     }
 
     private boolean hasSameDetails(Payment payment, CreatePaymentRequest request, String currency) {
