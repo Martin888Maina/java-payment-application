@@ -61,6 +61,25 @@ class PaymentRepositoryTest {
         assertThat(saved.getCreatedAt().getNano() % 1_000_000).isZero();
     }
 
+    @Test
+    void listsPaymentsNewestFirst() {
+        paymentRepository.save(newPayment("PAY-FFFFFFFFFFF1", "INV-2001"));
+        paymentRepository.save(newPayment("PAY-FFFFFFFFFFF2", "INV-2002"));
+        paymentRepository.save(newPayment("PAY-FFFFFFFFFFF3", "INV-2003"));
+
+        assertThat(paymentRepository.findAllByOrderByCreatedAtDescIdDesc())
+                .extracting(Payment::getMerchantReference)
+                .containsExactly("INV-2003", "INV-2002", "INV-2001");
+    }
+
+    @Test
+    void listsOnlyPaymentsWithGivenStatus() {
+        paymentRepository.save(newPayment("PAY-GGGGGGGGGGG1", "INV-3001"));
+
+        assertThat(paymentRepository.findAllByStatusOrderByCreatedAtDescIdDesc(PaymentStatus.PENDING)).hasSize(1);
+        assertThat(paymentRepository.findAllByStatusOrderByCreatedAtDescIdDesc(PaymentStatus.FAILED)).isEmpty();
+    }
+
     private Payment newPayment(String reference, String merchantReference) {
         return new Payment(reference, merchantReference, new BigDecimal("1500.00"), "KES", "254712345678");
     }

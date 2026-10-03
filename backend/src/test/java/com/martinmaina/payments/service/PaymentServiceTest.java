@@ -8,6 +8,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.util.List;
 import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
@@ -22,6 +23,7 @@ import com.martinmaina.payments.dto.PaymentResponse;
 import com.martinmaina.payments.entity.Payment;
 import com.martinmaina.payments.entity.PaymentStatus;
 import com.martinmaina.payments.exception.DuplicatePaymentException;
+import com.martinmaina.payments.exception.PaymentNotFoundException;
 import com.martinmaina.payments.repository.PaymentRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -128,6 +130,45 @@ class PaymentServiceTest {
 
         assertThatThrownBy(() -> paymentService.create(request("KES")))
                 .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void findsPaymentByReference() {
+        when(paymentRepository.findByReference("PAY-EXISTING0001")).thenReturn(Optional.of(existingPayment()));
+
+        PaymentResponse payment = paymentService.findByReference("PAY-EXISTING0001");
+
+        assertThat(payment.merchantReference()).isEqualTo("INV-1001");
+    }
+
+    @Test
+    void throwsWhenPaymentIsNotFound() {
+        when(paymentRepository.findByReference("PAY-UNKNOWN")).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> paymentService.findByReference("PAY-UNKNOWN"))
+                .isInstanceOf(PaymentNotFoundException.class)
+                .hasMessage("Payment PAY-UNKNOWN was not found");
+    }
+
+    @Test
+    void listsAllPaymentsWhenNoStatusIsGiven() {
+        when(paymentRepository.findAllByOrderByCreatedAtDescIdDesc()).thenReturn(List.of(existingPayment()));
+
+        List<PaymentResponse> payments = paymentService.list(null);
+
+        assertThat(payments).extracting(PaymentResponse::reference).containsExactly("PAY-EXISTING0001");
+        verify(paymentRepository, never()).findAllByStatusOrderByCreatedAtDescIdDesc(any());
+    }
+
+    @Test
+    void listsOnlyPaymentsWithGivenStatus() {
+        when(paymentRepository.findAllByStatusOrderByCreatedAtDescIdDesc(PaymentStatus.PENDING))
+                .thenReturn(List.of(existingPayment()));
+
+        List<PaymentResponse> payments = paymentService.list(PaymentStatus.PENDING);
+
+        assertThat(payments).hasSize(1);
+        verify(paymentRepository, never()).findAllByOrderByCreatedAtDescIdDesc();
     }
 
     private Payment existingPayment() {
