@@ -10,6 +10,7 @@ import org.springframework.stereotype.Service;
 import com.martinmaina.payments.dto.CreatePaymentRequest;
 import com.martinmaina.payments.dto.PaymentResponse;
 import com.martinmaina.payments.entity.Payment;
+import com.martinmaina.payments.entity.PaymentStatus;
 import com.martinmaina.payments.exception.DuplicatePaymentException;
 import com.martinmaina.payments.exception.PaymentNotFoundException;
 import com.martinmaina.payments.repository.PaymentRepository;
@@ -64,8 +65,11 @@ public class PaymentService {
                 .orElseThrow(() -> new PaymentNotFoundException(reference));
     }
 
-    public List<PaymentResponse> list() {
-        return paymentRepository.findAllByOrderByCreatedAtDescIdDesc().stream()
+    public List<PaymentResponse> list(PaymentStatus status) {
+        List<Payment> payments = status == null
+                ? paymentRepository.findAllByOrderByCreatedAtDescIdDesc()
+                : paymentRepository.findAllByStatusOrderByCreatedAtDescIdDesc(status);
+        return payments.stream()
                 .map(PaymentResponse::from)
                 .toList();
     }

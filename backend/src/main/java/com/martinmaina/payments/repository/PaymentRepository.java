@@ -6,6 +6,7 @@ import java.util.Optional;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 import com.martinmaina.payments.entity.Payment;
+import com.martinmaina.payments.entity.PaymentStatus;
 
 public interface PaymentRepository extends JpaRepository<Payment, Long> {
 
@@ -14,4 +15,6 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     Optional<Payment> findByMerchantReference(String merchantReference);
 
     List<Payment> findAllByOrderByCreatedAtDescIdDesc();
+
+    List<Payment> findAllByStatusOrderByCreatedAtDescIdDesc(PaymentStatus status);
 }
