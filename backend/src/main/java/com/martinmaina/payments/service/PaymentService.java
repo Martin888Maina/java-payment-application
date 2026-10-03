@@ -1,6 +1,7 @@
 package com.martinmaina.payments.service;
 
 import java.security.SecureRandom;
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.dao.DataIntegrityViolationException;
@@ -61,6 +62,12 @@ public class PaymentService {
         return paymentRepository.findByReference(reference)
                 .map(PaymentResponse::from)
                 .orElseThrow(() -> new PaymentNotFoundException(reference));
+    }
+
+    public List<PaymentResponse> list() {
+        return paymentRepository.findAllByOrderByCreatedAtDescIdDesc().stream()
+                .map(PaymentResponse::from)
+                .toList();
     }
 
     private CreateResult resolveDuplicate(Payment existing, CreatePaymentRequest request, String currency) {
