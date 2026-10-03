@@ -58,6 +58,7 @@ class PaymentRepositoryTest {
 
         assertThat(saved.getCreatedAt()).isNotNull();
         assertThat(saved.getUpdatedAt()).isEqualTo(saved.getCreatedAt());
+        assertThat(saved.getCreatedAt().getNano() % 1_000_000).isZero();
     }
 
     private Payment newPayment(String reference, String merchantReference) {

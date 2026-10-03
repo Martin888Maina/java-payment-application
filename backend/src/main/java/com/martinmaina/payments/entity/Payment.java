@@ -2,6 +2,7 @@ package com.martinmaina.payments.entity;
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -65,14 +66,19 @@ public class Payment {
 
     @PrePersist
     void onCreate() {
-        Instant now = Instant.now();
+        Instant now = now();
         this.createdAt = now;
         this.updatedAt = now;
     }
 
     @PreUpdate
     void onUpdate() {
-        this.updatedAt = Instant.now();
+        this.updatedAt = now();
+    }
+
+    // Rounded so the saved value matches the value returned before saving
+    private static Instant now() {
+        return Instant.now().truncatedTo(ChronoUnit.MILLIS);
     }
 
     public Long getId() {
