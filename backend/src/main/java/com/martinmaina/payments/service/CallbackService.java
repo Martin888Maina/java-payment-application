@@ -20,7 +20,7 @@ public class CallbackService {
 
     @Transactional
     public PaymentResponse apply(CallbackRequest callback) {
-        Payment payment = paymentRepository.findByReference(callback.reference())
+        Payment payment = paymentRepository.findForUpdateByReference(callback.reference())
                 .orElseThrow(() -> new PaymentNotFoundException(callback.reference()));
 
         // Providers resend callbacks, so a repeat of the same result changes nothing

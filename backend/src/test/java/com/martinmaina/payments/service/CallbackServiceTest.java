@@ -38,7 +38,7 @@ class CallbackServiceTest {
     @Test
     void marksPendingPaymentAsSuccessful() {
         Payment payment = pendingPayment();
-        when(paymentRepository.findByReference(REFERENCE)).thenReturn(Optional.of(payment));
+        when(paymentRepository.findForUpdateByReference(REFERENCE)).thenReturn(Optional.of(payment));
         when(paymentRepository.saveAndFlush(payment)).thenReturn(payment);
 
         PaymentResponse response = callbackService.apply(callback("SUCCESSFUL"));
@@ -51,7 +51,7 @@ class CallbackServiceTest {
     @Test
     void marksPendingPaymentAsFailed() {
         Payment payment = pendingPayment();
-        when(paymentRepository.findByReference(REFERENCE)).thenReturn(Optional.of(payment));
+        when(paymentRepository.findForUpdateByReference(REFERENCE)).thenReturn(Optional.of(payment));
         when(paymentRepository.saveAndFlush(payment)).thenReturn(payment);
 
         PaymentResponse response = callbackService.apply(callback("FAILED"));
@@ -63,7 +63,7 @@ class CallbackServiceTest {
     void repeatedCallbackWithSameResultChangesNothing() {
         Payment payment = pendingPayment();
         payment.complete(PaymentStatus.SUCCESSFUL, "QJK3H2L9P0");
-        when(paymentRepository.findByReference(REFERENCE)).thenReturn(Optional.of(payment));
+        when(paymentRepository.findForUpdateByReference(REFERENCE)).thenReturn(Optional.of(payment));
 
         PaymentResponse response = callbackService.apply(callback("SUCCESSFUL"));
 
@@ -75,7 +75,7 @@ class CallbackServiceTest {
     void callbackWithDifferentResultIsRejected() {
         Payment payment = pendingPayment();
         payment.complete(PaymentStatus.SUCCESSFUL, "QJK3H2L9P0");
-        when(paymentRepository.findByReference(REFERENCE)).thenReturn(Optional.of(payment));
+        when(paymentRepository.findForUpdateByReference(REFERENCE)).thenReturn(Optional.of(payment));
 
         assertThatThrownBy(() -> callbackService.apply(callback("FAILED")))
                 .isInstanceOf(PaymentAlreadyFinalisedException.class);
@@ -85,7 +85,7 @@ class CallbackServiceTest {
 
     @Test
     void callbackForUnknownPaymentThrows() {
-        when(paymentRepository.findByReference(REFERENCE)).thenReturn(Optional.empty());
+        when(paymentRepository.findForUpdateByReference(REFERENCE)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> callbackService.apply(callback("SUCCESSFUL")))
                 .isInstanceOf(PaymentNotFoundException.class);
