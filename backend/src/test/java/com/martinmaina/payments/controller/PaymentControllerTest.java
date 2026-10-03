@@ -2,8 +2,10 @@ package com.martinmaina.payments.controller;
 
 import static org.hamcrest.Matchers.endsWith;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
@@ -12,6 +14,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -25,6 +28,7 @@ import com.martinmaina.payments.dto.CreatePaymentRequest;
 import com.martinmaina.payments.dto.PaymentResponse;
 import com.martinmaina.payments.entity.PaymentStatus;
 import com.martinmaina.payments.exception.DuplicatePaymentException;
+import com.martinmaina.payments.exception.PaymentNotFoundException;
 import com.martinmaina.payments.service.PaymentService;
 
 @WebMvcTest(PaymentController.class)
@@ -131,6 +135,55 @@ class PaymentControllerTest {
                 .andExpect(jsonPath("$.title").value("Conflict"))
                 .andExpect(jsonPath("$.detail")
                         .value("Merchant reference INV-1001 is already used by a payment with different details"));
+    }
+
+    @Test
+    void returnsPaymentByReference() throws Exception {
+        when(paymentService.findByReference("PAY-7F3K9Q2M8XWD")).thenReturn(paymentResponse());
+
+        mockMvc.perform(get("/api/v1/payments/PAY-7F3K9Q2M8XWD"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.reference").value("PAY-7F3K9Q2M8XWD"))
+                .andExpect(jsonPath("$.amount").value(1500.00))
+                .andExpect(jsonPath("$.status").value("PENDING"));
+    }
+
+    @Test
+    void returns404ForUnknownPayment() throws Exception {
+        when(paymentService.findByReference("PAY-UNKNOWN")).thenThrow(new PaymentNotFoundException("PAY-UNKNOWN"));
+
+        mockMvc.perform(get("/api/v1/payments/PAY-UNKNOWN"))
+                .andExpect(status().isNotFound())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.detail").value("Payment PAY-UNKNOWN was not found"));
+    }
+
+    @Test
+    void listsPayments() throws Exception {
+        when(paymentService.list(null)).thenReturn(List.of(paymentResponse()));
+
+        mockMvc.perform(get("/api/v1/payments"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0].reference").value("PAY-7F3K9Q2M8XWD"));
+    }
+
+    @Test
+    void passesStatusFilterToService() throws Exception {
+        when(paymentService.list(PaymentStatus.PENDING)).thenReturn(List.of(paymentResponse()));
+
+        mockMvc.perform(get("/api/v1/payments").param("status", "PENDING"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1));
+        verify(paymentService).list(PaymentStatus.PENDING);
+    }
+
+    @Test
+    void returns400ForInvalidStatusFilter() throws Exception {
+        mockMvc.perform(get("/api/v1/payments").param("status", "DONE"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON));
+        verifyNoInteractions(paymentService);
     }
 
     private ResultActions postPayment(String body) throws Exception {
