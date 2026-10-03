@@ -1,6 +1,7 @@
 package com.martinmaina.payments.service;
 
 import java.security.SecureRandom;
+import java.util.Optional;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,6 +31,13 @@ public class PaymentService {
     @Transactional
     public CreateResult create(CreatePaymentRequest request) {
         String currency = request.currency() != null ? request.currency() : DEFAULT_CURRENCY;
+
+        // A repeated request returns the first payment instead of creating a second one
+        Optional<Payment> existing = paymentRepository.findByMerchantReference(request.merchantReference());
+        if (existing.isPresent() && hasSameDetails(existing.get(), request, currency)) {
+            return new CreateResult(PaymentResponse.from(existing.get()), false);
+        }
+
         Payment payment = new Payment(
                 newReference(),
                 request.merchantReference(),
@@ -39,6 +47,12 @@ public class PaymentService {
 
         Payment saved = paymentRepository.save(payment);
         return new CreateResult(PaymentResponse.from(saved), true);
+    }
+
+    private boolean hasSameDetails(Payment payment, CreatePaymentRequest request, String currency) {
+        return payment.getAmount().compareTo(request.amount()) == 0
+                && payment.getCurrency().equals(currency)
+                && payment.getPayerPhone().equals(request.payerPhone());
     }
 
     private String newReference() {
