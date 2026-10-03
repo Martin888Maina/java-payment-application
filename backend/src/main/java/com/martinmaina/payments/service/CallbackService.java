@@ -23,6 +23,11 @@ public class CallbackService {
         Payment payment = paymentRepository.findByReference(callback.reference())
                 .orElseThrow(() -> new PaymentNotFoundException(callback.reference()));
 
+        // Providers resend callbacks, so a repeat of the same result changes nothing
+        if (payment.getStatus() == callback.result()) {
+            return PaymentResponse.from(payment);
+        }
+
         payment.complete(callback.result(), callback.providerReference());
 
         // Flushing runs the update callback so the response has the new updatedAt
