@@ -10,6 +10,7 @@ import com.martinmaina.payments.dto.CreatePaymentRequest;
 import com.martinmaina.payments.dto.PaymentResponse;
 import com.martinmaina.payments.entity.Payment;
 import com.martinmaina.payments.exception.DuplicatePaymentException;
+import com.martinmaina.payments.exception.PaymentNotFoundException;
 import com.martinmaina.payments.repository.PaymentRepository;
 
 @Service
@@ -54,6 +55,12 @@ public class PaymentService {
                     .orElseThrow(() -> e);
             return resolveDuplicate(first, request, currency);
         }
+    }
+
+    public PaymentResponse findByReference(String reference) {
+        return paymentRepository.findByReference(reference)
+                .map(PaymentResponse::from)
+                .orElseThrow(() -> new PaymentNotFoundException(reference));
     }
 
     private CreateResult resolveDuplicate(Payment existing, CreatePaymentRequest request, String currency) {
