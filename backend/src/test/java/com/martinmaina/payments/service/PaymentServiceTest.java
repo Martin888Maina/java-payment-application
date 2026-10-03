@@ -1,22 +1,27 @@
 package com.martinmaina.payments.service;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.math.BigDecimal;
+import java.util.Optional;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DataIntegrityViolationException;
 
 import com.martinmaina.payments.dto.CreatePaymentRequest;
 import com.martinmaina.payments.dto.PaymentResponse;
 import com.martinmaina.payments.entity.Payment;
 import com.martinmaina.payments.entity.PaymentStatus;
+import com.martinmaina.payments.exception.DuplicatePaymentException;
 import com.martinmaina.payments.repository.PaymentRepository;
 
 @ExtendWith(MockitoExtension.class)
@@ -68,6 +73,65 @@ class PaymentServiceTest {
         PaymentService.CreateResult result = paymentService.create(request("KES"));
 
         assertThat(result.payment().reference()).matches("PAY-[A-HJ-NP-Z2-9]{12}");
+    }
+
+    @Test
+    void returnsExistingPaymentForRepeatedRequest() {
+        Payment existing = existingPayment();
+        when(paymentRepository.findByMerchantReference("INV-1001")).thenReturn(Optional.of(existing));
+
+        PaymentService.CreateResult result = paymentService.create(
+                new CreatePaymentRequest("INV-1001", new BigDecimal("1500.0"), null, "254712345678"));
+
+        assertThat(result.created()).isFalse();
+        assertThat(result.payment().reference()).isEqualTo("PAY-EXISTING0001");
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void rejectsReusedMerchantReferenceWithDifferentAmount() {
+        when(paymentRepository.findByMerchantReference("INV-1001")).thenReturn(Optional.of(existingPayment()));
+
+        assertThatThrownBy(() -> paymentService.create(
+                new CreatePaymentRequest("INV-1001", new BigDecimal("2000.00"), "KES", "254712345678")))
+                .isInstanceOf(DuplicatePaymentException.class);
+        verify(paymentRepository, never()).save(any(Payment.class));
+    }
+
+    @Test
+    void returnsFirstPaymentWhenSimultaneousRequestIsSavedFirst() {
+        when(paymentRepository.findByMerchantReference("INV-1001"))
+                .thenReturn(Optional.empty(), Optional.of(existingPayment()));
+        when(paymentRepository.save(any(Payment.class))).thenThrow(new DataIntegrityViolationException("duplicate"));
+
+        PaymentService.CreateResult result = paymentService.create(request("KES"));
+
+        assertThat(result.created()).isFalse();
+        assertThat(result.payment().reference()).isEqualTo("PAY-EXISTING0001");
+    }
+
+    @Test
+    void rejectsSimultaneousRequestWithDifferentDetails() {
+        when(paymentRepository.findByMerchantReference("INV-1001"))
+                .thenReturn(Optional.empty(), Optional.of(existingPayment()));
+        when(paymentRepository.save(any(Payment.class))).thenThrow(new DataIntegrityViolationException("duplicate"));
+
+        assertThatThrownBy(() -> paymentService.create(
+                new CreatePaymentRequest("INV-1001", new BigDecimal("2000.00"), "KES", "254712345678")))
+                .isInstanceOf(DuplicatePaymentException.class);
+    }
+
+    @Test
+    void rethrowsSaveErrorWhenNoPaymentWithMerchantReferenceExists() {
+        when(paymentRepository.findByMerchantReference("INV-1001")).thenReturn(Optional.empty());
+        when(paymentRepository.save(any(Payment.class))).thenThrow(new DataIntegrityViolationException("other"));
+
+        assertThatThrownBy(() -> paymentService.create(request("KES")))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    private Payment existingPayment() {
+        return new Payment("PAY-EXISTING0001", "INV-1001", new BigDecimal("1500.00"), "KES", "254712345678");
     }
 
     private void returnSavedPayment() {
