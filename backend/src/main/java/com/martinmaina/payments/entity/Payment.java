@@ -4,6 +4,8 @@ import java.math.BigDecimal;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
+import com.martinmaina.payments.exception.PaymentAlreadyFinalisedException;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -62,6 +64,22 @@ public class Payment {
         this.currency = currency;
         this.payerPhone = payerPhone;
         this.status = PaymentStatus.PENDING;
+    }
+
+    public void complete(PaymentStatus result, String providerReference) {
+        if (result == PaymentStatus.PENDING) {
+            throw new IllegalArgumentException("A payment can only be completed as SUCCESSFUL or FAILED");
+        }
+        // A payment can only be completed once
+        if (isFinal()) {
+            throw new PaymentAlreadyFinalisedException(reference, status);
+        }
+        this.status = result;
+        this.providerReference = providerReference;
+    }
+
+    public boolean isFinal() {
+        return status != PaymentStatus.PENDING;
     }
 
     @PrePersist
