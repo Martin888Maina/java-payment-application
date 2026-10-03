@@ -9,6 +9,7 @@ import org.springframework.transaction.annotation.Transactional;
 import com.martinmaina.payments.dto.CreatePaymentRequest;
 import com.martinmaina.payments.dto.PaymentResponse;
 import com.martinmaina.payments.entity.Payment;
+import com.martinmaina.payments.exception.DuplicatePaymentException;
 import com.martinmaina.payments.repository.PaymentRepository;
 
 @Service
@@ -34,8 +35,11 @@ public class PaymentService {
 
         // A repeated request returns the first payment instead of creating a second one
         Optional<Payment> existing = paymentRepository.findByMerchantReference(request.merchantReference());
-        if (existing.isPresent() && hasSameDetails(existing.get(), request, currency)) {
-            return new CreateResult(PaymentResponse.from(existing.get()), false);
+        if (existing.isPresent()) {
+            if (hasSameDetails(existing.get(), request, currency)) {
+                return new CreateResult(PaymentResponse.from(existing.get()), false);
+            }
+            throw new DuplicatePaymentException(request.merchantReference());
         }
 
         Payment payment = new Payment(
