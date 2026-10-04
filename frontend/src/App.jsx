@@ -1,4 +1,5 @@
 import { BrowserRouter, NavLink, Outlet, Route, Routes } from 'react-router'
+import Guide from './pages/Guide.jsx'
 import NewPayment from './pages/NewPayment.jsx'
 import PaymentDetail from './pages/PaymentDetail.jsx'
 import PaymentList from './pages/PaymentList.jsx'
@@ -14,6 +15,7 @@ function Layout() {
             <NavLink to="/" end>Payments</NavLink>
             <NavLink to="/payments/new">New payment</NavLink>
             <NavLink to="/reconciliation">Reconciliation</NavLink>
+            <NavLink to="/guide">Guide</NavLink>
           </nav>
         </div>
       </header>
@@ -33,6 +35,7 @@ function App() {
           <Route path="payments/new" element={<NewPayment />} />
           <Route path="payments/:reference" element={<PaymentDetail />} />
           <Route path="reconciliation" element={<Reconciliation />} />
+          <Route path="guide" element={<Guide />} />
         </Route>
       </Routes>
     </BrowserRouter>
