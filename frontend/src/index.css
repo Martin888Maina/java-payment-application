@@ -53,6 +53,10 @@ table {
   border-collapse: collapse;
 }
 
+table.summary {
+  width: auto;
+}
+
 th,
 td {
   border: 1px solid #000;
