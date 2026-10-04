@@ -1,5 +1,7 @@
 # java-payment-application
 
+[![CI](https://github.com/Martin888Maina/java-payment-application/actions/workflows/ci.yml/badge.svg?branch=master)](https://github.com/Martin888Maina/java-payment-application/actions/workflows/ci.yml)
+
 A small payments API built with Java and Spring Boot, with a plain React interface for trying it out.
 
 It covers the four parts of a basic payment flow: creating a payment request, receiving the result from the payment provider through a callback, checking the status of a payment, and reconciling our records against the provider's records.
@@ -284,3 +286,12 @@ cd frontend
 npm run lint
 npm run build
 ```
+
+## Continuous integration
+
+GitHub Actions runs the workflow in `.github/workflows/ci.yml` on every push and every pull request. Two jobs run side by side:
+
+- **Back end:** sets up Java 21 (Temurin) with a Maven cache and runs `./mvnw -B verify`, which compiles the code and runs all 100 tests.
+- **Front end:** sets up Node.js 22 with an npm cache, installs the exact versions from `package-lock.json` with `npm ci`, then runs `npm run lint` and `npm run build`. The lint step fails on warnings as well as errors.
+
+The badge at the top of this file shows the result of the latest run on `master`.
