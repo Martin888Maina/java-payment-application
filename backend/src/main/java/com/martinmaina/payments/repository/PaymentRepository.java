@@ -1,5 +1,6 @@
 package com.martinmaina.payments.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -20,6 +21,10 @@ public interface PaymentRepository extends JpaRepository<Payment, Long> {
     // Holds the row until the transaction ends so callbacks for one payment run one at a time
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     Optional<Payment> findForUpdateByReference(String reference);
+
+    List<Payment> findAllByReferenceIn(Collection<String> references);
+
+    List<Payment> findAllByStatusIn(Collection<PaymentStatus> statuses);
 
     List<Payment> findAllByOrderByCreatedAtDescIdDesc();
 
