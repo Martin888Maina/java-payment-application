@@ -29,48 +29,52 @@ function PaymentList() {
 
   return (
     <>
-      <h2>Payments</h2>
-      <p>
-        <label htmlFor="status">Status</label>
-        <select id="status" value={status} onChange={changeStatus}>
-          <option value="">All</option>
-          <option value="PENDING">Pending</option>
-          <option value="SUCCESSFUL">Successful</option>
-          <option value="FAILED">Failed</option>
-        </select>
-      </p>
+      <div className="page-header">
+        <h2>Payments</h2>
+        <div className="filter">
+          <label htmlFor="status">Status</label>
+          <select id="status" value={status} onChange={changeStatus}>
+            <option value="">All</option>
+            <option value="PENDING">Pending</option>
+            <option value="SUCCESSFUL">Successful</option>
+            <option value="FAILED">Failed</option>
+          </select>
+        </div>
+      </div>
       {loading && <p>Loading payments...</p>}
-      {!loading && error && <p>Error: {error}</p>}
+      {!loading && error && <p className="error">Error: {error}</p>}
       {!loading && !error && payments.length === 0 && (
         <p>{status ? 'No payments with this status.' : 'No payments yet.'}</p>
       )}
       {!loading && !error && payments.length > 0 && (
-        <table>
-          <thead>
-            <tr>
-              <th>Reference</th>
-              <th>Merchant reference</th>
-              <th>Amount</th>
-              <th>Phone</th>
-              <th>Status</th>
-              <th>Created</th>
-            </tr>
-          </thead>
-          <tbody>
-            {payments.map((payment) => (
-              <tr key={payment.reference}>
-                <td>
-                  <Link to={`/payments/${payment.reference}`}>{payment.reference}</Link>
-                </td>
-                <td>{payment.merchantReference}</td>
-                <td>{formatAmount(payment.amount, payment.currency)}</td>
-                <td>{payment.payerPhone}</td>
-                <td>{payment.status}</td>
-                <td>{formatDate(payment.createdAt)}</td>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Reference</th>
+                <th>Merchant reference</th>
+                <th className="num">Amount</th>
+                <th>Phone</th>
+                <th>Status</th>
+                <th>Created</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {payments.map((payment) => (
+                <tr key={payment.reference}>
+                  <td>
+                    <Link to={`/payments/${payment.reference}`}>{payment.reference}</Link>
+                  </td>
+                  <td>{payment.merchantReference}</td>
+                  <td className="num">{formatAmount(payment.amount, payment.currency)}</td>
+                  <td>{payment.payerPhone}</td>
+                  <td>{payment.status}</td>
+                  <td>{formatDate(payment.createdAt)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </>
   )

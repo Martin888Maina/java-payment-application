@@ -39,11 +39,15 @@ function PaymentDetail() {
 
   return (
     <>
-      <h2>Payment {reference}</h2>
+      <div className="page-header">
+        <h2>
+          Payment <span className="nowrap">{reference}</span>
+        </h2>
+      </div>
       {!payment && !error && <p>Loading payment...</p>}
-      {error && <p>Error: {error}</p>}
+      {error && <p className="error">Error: {error}</p>}
       {payment && (
-        <dl>
+        <dl className="details">
           <dt>Status</dt>
           <dd>{payment.status}</dd>
           <dt>Merchant reference</dt>
@@ -62,19 +66,19 @@ function PaymentDetail() {
       )}
       {payment?.status === 'PENDING' && (
         <>
-          <p>Send a signed test callback, as a payment provider would.</p>
-          <p>
+          <p className="hint">Send a signed test callback, as a payment provider would.</p>
+          <div className="actions">
             <button type="button" className="primary" disabled={simulating} onClick={() => simulate('SUCCESSFUL')}>
               Simulate success
-            </button>{' '}
+            </button>
             <button type="button" disabled={simulating} onClick={() => simulate('FAILED')}>
               Simulate failure
             </button>
-          </p>
+          </div>
         </>
       )}
-      {simulateError && <p>Error: {simulateError}</p>}
-      <p>
+      {simulateError && <p className="error">Error: {simulateError}</p>}
+      <p className="back">
         <Link to="/">Back to payments</Link>
       </p>
     </>

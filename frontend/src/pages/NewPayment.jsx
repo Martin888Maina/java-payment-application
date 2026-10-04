@@ -59,8 +59,10 @@ function NewPayment() {
 
   return (
     <>
-      <h2>New payment</h2>
-      <form onSubmit={submit}>
+      <div className="page-header">
+        <h2>New payment</h2>
+      </div>
+      <form className="form" onSubmit={submit}>
         <Field
           name="merchantReference"
           label="Merchant reference"
@@ -98,7 +100,7 @@ function NewPayment() {
           </button>
         </p>
       </form>
-      {error && <p>Error: {error.message}</p>}
+      {error && <p className="error">Error: {error.message}</p>}
     </>
   )
 }
