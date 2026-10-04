@@ -200,3 +200,60 @@ Unexpected errors return `500` with the message `An unexpected error occurred`. 
 `POST /api/v1/dev/payments/{reference}/simulate-callback` with `{ "status": "SUCCESSFUL" }` or `{ "status": "FAILED" }`.
 
 There is no real payment provider in this project. When the back end runs with the `dev` profile, this endpoint plays the provider's part: it builds a callback, signs it with the configured secret and sends it to the callback endpoint above, so the signature check, validation and status rules all run as they would for a real provider. Without the `dev` profile the endpoint does not exist and returns `404`.
+
+## Getting started
+
+### Prerequisites
+
+- Java 21 (a JDK, not only a JRE)
+- Node.js 20.19 or newer, with npm (Node.js 22 is recommended)
+- Git
+
+Maven does not need to be installed. The Maven wrapper (`mvnw`) downloads the right version the first time it runs.
+
+### Get the code
+
+```bash
+git clone https://github.com/Martin888Maina/java-payment-application.git
+cd java-payment-application
+```
+
+### Run the back end
+
+The back end needs a shared secret for signing callbacks. Copy the example file and set your own value:
+
+```bash
+cd backend
+cp .env.example .env
+```
+
+Open `backend/.env` and replace the placeholder with any long random string, for example the output of `openssl rand -hex 32`. Instead of the file, you can set the `PAYMENT_CALLBACK_SECRET` environment variable. The app refuses to start if the secret is missing.
+
+Start the API with the `dev` profile:
+
+```bash
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+```
+
+The API runs at `http://localhost:8080`. The `dev` profile turns on the callback simulator and the H2 database console at `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:payments`, user `sa`, no password). To run without them, use `./mvnw spring-boot:run`.
+
+On Windows, use `mvnw.cmd` instead of `./mvnw` and `copy` instead of `cp`.
+
+### Run the front end
+
+In a second terminal, from the project folder:
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173`. During development, Vite forwards every request that starts with `/api` to the back end on port 8080, so start the back end first.
+
+### Try it
+
+1. Open **New payment**, fill in the form and create a payment. The page for the new payment opens.
+2. Click **Simulate success**. The simulator sends a signed callback and the status changes to `SUCCESSFUL`.
+3. Open **Payments** to see it in the list, and use the status filter.
+4. Open **Reconciliation**, paste a line such as `PAY-7F3K9Q2M8XWD,1500.00,SUCCESSFUL` using the reference of your payment, and run it.
