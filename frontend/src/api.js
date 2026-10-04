@@ -34,9 +34,15 @@ function errorMessage(status, body) {
   return `Request failed with status ${status}`
 }
 
-export function listPayments(status) {
-  const query = status ? `?status=${encodeURIComponent(status)}` : ''
-  return request(`/api/v1/payments${query}`)
+export const PAGE_SIZE = 10
+
+// The page number is 0-based, as the API expects
+export function listPayments(status, page) {
+  const params = new URLSearchParams({ page, size: PAGE_SIZE })
+  if (status) {
+    params.set('status', status)
+  }
+  return request(`/api/v1/payments?${params}`)
 }
 
 export function getPayment(reference) {
@@ -52,6 +58,10 @@ export function simulateCallback(reference, status) {
     method: 'POST',
     body: JSON.stringify({ status }),
   })
+}
+
+export function resetPayments() {
+  return request('/api/v1/dev/payments', { method: 'DELETE' })
 }
 
 export function reconcile(records) {

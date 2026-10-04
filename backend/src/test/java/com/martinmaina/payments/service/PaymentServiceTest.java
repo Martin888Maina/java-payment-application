@@ -17,8 +17,13 @@ import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.PageImpl;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 
 import com.martinmaina.payments.dto.CreatePaymentRequest;
+import com.martinmaina.payments.dto.PageResponse;
 import com.martinmaina.payments.dto.PaymentResponse;
 import com.martinmaina.payments.entity.Payment;
 import com.martinmaina.payments.entity.PaymentStatus;
@@ -151,24 +156,32 @@ class PaymentServiceTest {
     }
 
     @Test
-    void listsAllPaymentsWhenNoStatusIsGiven() {
-        when(paymentRepository.findAllByOrderByCreatedAtDescIdDesc()).thenReturn(List.of(existingPayment()));
+    void listsAllPaymentsNewestFirstWhenNoStatusIsGiven() {
+        PageRequest expected = PageRequest.of(1, 10, Sort.by(Sort.Direction.DESC, "createdAt", "id"));
+        when(paymentRepository.findAll(expected))
+                .thenReturn(new PageImpl<>(List.of(existingPayment()), expected, 11));
 
-        List<PaymentResponse> payments = paymentService.list(null);
+        PageResponse<PaymentResponse> page = paymentService.list(null, 1, 10);
 
-        assertThat(payments).extracting(PaymentResponse::reference).containsExactly("PAY-EXISTING0001");
-        verify(paymentRepository, never()).findAllByStatusOrderByCreatedAtDescIdDesc(any());
+        assertThat(page.content()).extracting(PaymentResponse::reference).containsExactly("PAY-EXISTING0001");
+        assertThat(page.page()).isEqualTo(1);
+        assertThat(page.size()).isEqualTo(10);
+        assertThat(page.totalElements()).isEqualTo(11);
+        assertThat(page.totalPages()).isEqualTo(2);
+        verify(paymentRepository, never()).findAllByStatus(any(), any());
     }
 
     @Test
     void listsOnlyPaymentsWithGivenStatus() {
-        when(paymentRepository.findAllByStatusOrderByCreatedAtDescIdDesc(PaymentStatus.PENDING))
-                .thenReturn(List.of(existingPayment()));
+        PageRequest expected = PageRequest.of(0, 10, Sort.by(Sort.Direction.DESC, "createdAt", "id"));
+        when(paymentRepository.findAllByStatus(PaymentStatus.PENDING, expected))
+                .thenReturn(new PageImpl<>(List.of(existingPayment()), expected, 1));
 
-        List<PaymentResponse> payments = paymentService.list(PaymentStatus.PENDING);
+        PageResponse<PaymentResponse> page = paymentService.list(PaymentStatus.PENDING, 0, 10);
 
-        assertThat(payments).hasSize(1);
-        verify(paymentRepository, never()).findAllByOrderByCreatedAtDescIdDesc();
+        assertThat(page.content()).hasSize(1);
+        assertThat(page.totalPages()).isEqualTo(1);
+        verify(paymentRepository, never()).findAll(any(Pageable.class));
     }
 
     private Payment existingPayment() {

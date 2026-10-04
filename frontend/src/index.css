@@ -343,6 +343,46 @@ button.primary:disabled:hover {
   width: 28%;
 }
 
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 16px 24px;
+}
+
+.confirm {
+  margin-bottom: 40px;
+  padding: 24px;
+  border: 2px solid #000;
+}
+
+.confirm p {
+  font-weight: 600;
+}
+
+.confirm .actions {
+  margin-bottom: 0;
+}
+
+.pagination {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.pagination p {
+  margin: 0;
+  font-size: 15px;
+}
+
+/* Keeps the row in place on the first and last page */
+.pagination button:disabled {
+  visibility: hidden;
+}
+
 .guide {
   max-width: 720px;
 }
@@ -464,6 +504,12 @@ button.primary:disabled:hover {
   table.summary {
     width: 100%;
     min-width: 0;
+  }
+
+  .pagination p {
+    order: -1;
+    width: 100%;
+    text-align: center;
   }
 
   .lead {

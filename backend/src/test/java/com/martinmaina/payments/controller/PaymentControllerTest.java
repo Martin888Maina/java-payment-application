@@ -28,6 +28,7 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import com.martinmaina.payments.config.CallbackProperties;
 import com.martinmaina.payments.dto.CreatePaymentRequest;
+import com.martinmaina.payments.dto.PageResponse;
 import com.martinmaina.payments.dto.PaymentResponse;
 import com.martinmaina.payments.entity.PaymentStatus;
 import com.martinmaina.payments.exception.DuplicatePaymentException;
@@ -165,23 +166,66 @@ class PaymentControllerTest {
     }
 
     @Test
-    void listsPayments() throws Exception {
-        when(paymentService.list(null)).thenReturn(List.of(paymentResponse()));
+    void listsFirstPageOfTenByDefault() throws Exception {
+        when(paymentService.list(null, 0, 10)).thenReturn(onePage(0, 10));
 
         mockMvc.perform(get("/api/v1/payments"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1))
-                .andExpect(jsonPath("$[0].reference").value("PAY-7F3K9Q2M8XWD"));
+                .andExpect(jsonPath("$.content.length()").value(1))
+                .andExpect(jsonPath("$.content[0].reference").value("PAY-7F3K9Q2M8XWD"))
+                .andExpect(jsonPath("$.page").value(0))
+                .andExpect(jsonPath("$.size").value(10))
+                .andExpect(jsonPath("$.totalElements").value(21))
+                .andExpect(jsonPath("$.totalPages").value(3));
     }
 
     @Test
-    void passesStatusFilterToService() throws Exception {
-        when(paymentService.list(PaymentStatus.PENDING)).thenReturn(List.of(paymentResponse()));
+    void passesStatusPageAndSizeToService() throws Exception {
+        when(paymentService.list(PaymentStatus.PENDING, 2, 5)).thenReturn(onePage(2, 5));
 
-        mockMvc.perform(get("/api/v1/payments").param("status", "PENDING"))
+        mockMvc.perform(get("/api/v1/payments").param("status", "PENDING").param("page", "2").param("size", "5"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.length()").value(1));
-        verify(paymentService).list(PaymentStatus.PENDING);
+                .andExpect(jsonPath("$.page").value(2))
+                .andExpect(jsonPath("$.size").value(5));
+        verify(paymentService).list(PaymentStatus.PENDING, 2, 5);
+    }
+
+    @Test
+    void returns400ForNegativePage() throws Exception {
+        mockMvc.perform(get("/api/v1/payments").param("page", "-1"))
+                .andExpect(status().isBadRequest())
+                .andExpect(content().contentType(MediaType.APPLICATION_PROBLEM_JSON))
+                .andExpect(jsonPath("$.detail").value("Request validation failed"))
+                .andExpect(jsonPath("$.errors[0].field").value("page"))
+                .andExpect(jsonPath("$.errors[0].message").value("must be greater than or equal to 0"));
+        verifyNoInteractions(paymentService);
+    }
+
+    @Test
+    void returns400ForPageOverOneMillion() throws Exception {
+        mockMvc.perform(get("/api/v1/payments").param("page", "1000001"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("page"))
+                .andExpect(jsonPath("$.errors[0].message").value("must be less than or equal to 1000000"));
+        verifyNoInteractions(paymentService);
+    }
+
+    @Test
+    void returns400ForPageSizeOfZero() throws Exception {
+        mockMvc.perform(get("/api/v1/payments").param("size", "0"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("size"))
+                .andExpect(jsonPath("$.errors[0].message").value("must be greater than or equal to 1"));
+        verifyNoInteractions(paymentService);
+    }
+
+    @Test
+    void returns400ForPageSizeOverOneHundred() throws Exception {
+        mockMvc.perform(get("/api/v1/payments").param("size", "101"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errors[0].field").value("size"))
+                .andExpect(jsonPath("$.errors[0].message").value("must be less than or equal to 100"));
+        verifyNoInteractions(paymentService);
     }
 
     @Test
@@ -196,6 +240,10 @@ class PaymentControllerTest {
         return mockMvc.perform(post("/api/v1/payments")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(body));
+    }
+
+    private PageResponse<PaymentResponse> onePage(int page, int size) {
+        return new PageResponse<>(List.of(paymentResponse()), page, size, 21, 3);
     }
 
     private PaymentResponse paymentResponse() {
