@@ -6,6 +6,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -19,6 +20,7 @@ import com.martinmaina.payments.dto.ReconciliationResult;
 import com.martinmaina.payments.dto.ReconciliationSummary;
 import com.martinmaina.payments.entity.Payment;
 import com.martinmaina.payments.entity.PaymentStatus;
+import com.martinmaina.payments.exception.DuplicateProviderRecordException;
 import com.martinmaina.payments.repository.PaymentRepository;
 
 @Service
@@ -33,6 +35,11 @@ public class ReconciliationService {
     @Transactional(readOnly = true)
     public ReconciliationResult reconcile(ReconciliationRequest request) {
         List<ProviderRecord> records = request.records();
+        List<String> duplicates = duplicateReferences(records);
+        if (!duplicates.isEmpty()) {
+            throw new DuplicateProviderRecordException(duplicates);
+        }
+
         Set<String> providerReferences = records.stream().map(ProviderRecord::reference).collect(Collectors.toSet());
         Map<String, Payment> ourPayments = paymentRepository.findAllByReferenceIn(providerReferences)
                 .stream()
@@ -74,5 +81,15 @@ public class ReconciliationService {
                 missingOnProviderSide.size(), matchedAmount);
         return new ReconciliationResult(summary, matched, amountMismatches, statusMismatches, missingOnOurSide,
                 missingOnProviderSide);
+    }
+
+    private List<String> duplicateReferences(List<ProviderRecord> records) {
+        return records.stream()
+                .collect(Collectors.groupingBy(ProviderRecord::reference, TreeMap::new, Collectors.counting()))
+                .entrySet()
+                .stream()
+                .filter(entry -> entry.getValue() > 1)
+                .map(Map.Entry::getKey)
+                .toList();
     }
 }

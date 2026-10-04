@@ -31,6 +31,11 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(ex, problem, headers, status, request);
     }
 
+    @ExceptionHandler(DuplicateProviderRecordException.class)
+    public ProblemDetail handleDuplicateProviderRecord(DuplicateProviderRecordException ex) {
+        return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
+    }
+
     @ExceptionHandler(InvalidSignatureException.class)
     public ProblemDetail handleInvalidSignature(InvalidSignatureException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.UNAUTHORIZED, ex.getMessage());
