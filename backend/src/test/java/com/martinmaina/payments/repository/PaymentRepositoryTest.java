@@ -9,12 +9,17 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Sort;
 
 import com.martinmaina.payments.entity.Payment;
 import com.martinmaina.payments.entity.PaymentStatus;
 
 @DataJpaTest
 class PaymentRepositoryTest {
+
+    private static final Sort NEWEST_FIRST = Sort.by(Sort.Direction.DESC, "createdAt", "id");
 
     @Autowired
     private PaymentRepository paymentRepository;
@@ -62,22 +67,28 @@ class PaymentRepositoryTest {
     }
 
     @Test
-    void listsPaymentsNewestFirst() {
-        paymentRepository.save(newPayment("PAY-FFFFFFFFFFF1", "INV-2001"));
-        paymentRepository.save(newPayment("PAY-FFFFFFFFFFF2", "INV-2002"));
-        paymentRepository.save(newPayment("PAY-FFFFFFFFFFF3", "INV-2003"));
+    void pagesPaymentsNewestFirst() {
+        for (int i = 1; i <= 12; i++) {
+            paymentRepository.save(newPayment("PAY-FFFFFFFFF%03d".formatted(i), "INV-2%03d".formatted(i)));
+        }
 
-        assertThat(paymentRepository.findAllByOrderByCreatedAtDescIdDesc())
+        Page<Payment> secondPage = paymentRepository.findAll(PageRequest.of(1, 5, NEWEST_FIRST));
+
+        assertThat(secondPage.getContent())
                 .extracting(Payment::getMerchantReference)
-                .containsExactly("INV-2003", "INV-2002", "INV-2001");
+                .containsExactly("INV-2007", "INV-2006", "INV-2005", "INV-2004", "INV-2003");
+        assertThat(secondPage.getTotalElements()).isEqualTo(12);
+        assertThat(secondPage.getTotalPages()).isEqualTo(3);
     }
 
     @Test
-    void listsOnlyPaymentsWithGivenStatus() {
+    void pagesOnlyPaymentsWithGivenStatus() {
         paymentRepository.save(newPayment("PAY-GGGGGGGGGGG1", "INV-3001"));
 
-        assertThat(paymentRepository.findAllByStatusOrderByCreatedAtDescIdDesc(PaymentStatus.PENDING)).hasSize(1);
-        assertThat(paymentRepository.findAllByStatusOrderByCreatedAtDescIdDesc(PaymentStatus.FAILED)).isEmpty();
+        PageRequest firstPage = PageRequest.of(0, 10, NEWEST_FIRST);
+        assertThat(paymentRepository.findAllByStatus(PaymentStatus.PENDING, firstPage).getTotalElements())
+                .isEqualTo(1);
+        assertThat(paymentRepository.findAllByStatus(PaymentStatus.FAILED, firstPage)).isEmpty();
     }
 
     private Payment newPayment(String reference, String merchantReference) {

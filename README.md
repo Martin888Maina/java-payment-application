@@ -22,11 +22,11 @@ It covers the four parts of a basic payment flow: creating a payment request, re
 - **Idempotent requests.** Repeating a request with the same merchant reference returns the first payment instead of creating a second one. Reusing a merchant reference with different details is rejected. Two identical requests that arrive at the same moment are handled as well.
 - **Signed callbacks.** The provider signs each callback with HMAC-SHA256 using a shared secret. A callback with a missing or wrong signature is rejected before its body is read.
 - **Status lifecycle.** A payment moves from `PENDING` to `SUCCESSFUL` or `FAILED` once. A repeated callback with the same result changes nothing, and a finished payment cannot change. Callbacks for the same payment are processed one at a time using a database row lock.
-- **Status lookup.** Get one payment by its reference, or list payments with an optional status filter.
+- **Status lookup.** Get one payment by its reference, or list payments a page at a time with an optional status filter.
 - **Reconciliation.** Compare the provider's records with our payments. The result lists matched records, amount mismatches, status mismatches, records missing on our side and records missing on the provider side, with totals.
 - **Consistent errors.** Every error uses the same JSON shape (RFC 9457 problem details), with a message per field for validation errors.
-- **Callback simulator.** A small endpoint that only exists in the `dev` profile. It stands in for a real provider during local testing.
-- **Web interface.** Pages to list, create and view payments, trigger the simulator and run a reconciliation, plus a short guide page that explains how to use the app.
+- **Dev profile tools.** Two endpoints that only exist in the `dev` profile: a callback simulator that stands in for a real provider, and a reset that clears all test payments. Outside the `dev` profile payments are never deleted.
+- **Web interface.** Pages to list (ten per page), create and view payments, trigger the simulator, reset the demo data and run a reconciliation, plus a short guide page that explains how to use the app.
 
 ## API endpoints
 
@@ -36,7 +36,7 @@ The base URL is `http://localhost:8080/api/v1`. Requests and responses use JSON.
 |---|---|---|
 | Payment request | `POST /payments` | Create a payment |
 | Status | `GET /payments/{reference}` | Get one payment |
-| Status | `GET /payments?status=PENDING` | List payments, newest first, with an optional status filter |
+| Status | `GET /payments?status=PENDING&page=0&size=10` | List payments, newest first, one page at a time, with an optional status filter |
 | Callback | `POST /payments/callback` | Receive the result of a payment from the provider |
 | Reconciliation | `POST /reconciliation` | Compare provider records with our payments |
 
@@ -80,7 +80,27 @@ Sending the same request again returns `200 OK` with the same payment. Sending t
 
 `GET /api/v1/payments/PAY-7F3K9Q2M8XWD` returns the payment in the same shape as above, or `404 Not Found` if the reference is unknown.
 
-`GET /api/v1/payments` returns an array of payments, newest first. Add `?status=PENDING`, `?status=SUCCESSFUL` or `?status=FAILED` to filter the list.
+`GET /api/v1/payments` returns one page of payments, newest first. The query parameters are all optional:
+
+- `page`: the page number, from `0` to `1000000` (default `0`)
+- `size`: payments per page, from `1` to `100` (default `10`)
+- `status`: `PENDING`, `SUCCESSFUL` or `FAILED`, to filter the list
+
+`GET /api/v1/payments?page=1&size=10` returns:
+
+```json
+{
+  "content": [
+    { "reference": "PAY-7F3K9Q2M8XWD", "status": "PENDING", "...": "same fields as above" }
+  ],
+  "page": 1,
+  "size": 10,
+  "totalElements": 23,
+  "totalPages": 3
+}
+```
+
+A page past the end returns an empty `content` list. A `page` outside 0 to 1000000, or a `size` outside 1 to 100, returns `400 Bad Request` with a message for the parameter.
 
 ### Callback
 
@@ -197,11 +217,19 @@ Every error uses the same problem details format, with the content type `applica
 
 Unexpected errors return `500` with the message `An unexpected error occurred`. The details are written to the server log only.
 
-### Callback simulator (dev profile only)
+### Dev profile tools
+
+These endpoints only exist when the back end runs with the `dev` profile. Without it they return `404`.
+
+#### Callback simulator
 
 `POST /api/v1/dev/payments/{reference}/simulate-callback` with `{ "status": "SUCCESSFUL" }` or `{ "status": "FAILED" }`.
 
-There is no real payment provider in this project. When the back end runs with the `dev` profile, this endpoint plays the provider's part: it builds a callback, signs it with the configured secret and sends it to the callback endpoint above, so the signature check, validation and status rules all run as they would for a real provider. Without the `dev` profile the endpoint does not exist and returns `404`.
+There is no real payment provider in this project. When the back end runs with the `dev` profile, this endpoint plays the provider's part: it builds a callback, signs it with the configured secret and sends it to the callback endpoint above, so the signature check, validation and status rules all run as they would for a real provider.
+
+#### Reset demo data
+
+`DELETE /api/v1/dev/payments` deletes every payment and returns `204 No Content`. It is there to clear test data during local development. Real payment records are never deleted, so this endpoint is not available outside the `dev` profile.
 
 ## Getting started
 
@@ -237,7 +265,7 @@ Start the API with the `dev` profile:
 ./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
 ```
 
-The API runs at `http://localhost:8080`. The `dev` profile turns on the callback simulator and the H2 database console at `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:payments`, user `sa`, no password). To run without them, use `./mvnw spring-boot:run`.
+The API runs at `http://localhost:8080`. The `dev` profile turns on the callback simulator, the demo data reset and the H2 database console at `http://localhost:8080/h2-console` (JDBC URL `jdbc:h2:mem:payments`, user `sa`, no password). To run without them, use `./mvnw spring-boot:run`.
 
 On Windows, use `mvnw.cmd` instead of `./mvnw` and `copy` instead of `cp`.
 
@@ -257,14 +285,14 @@ Open `http://localhost:5173`. During development, Vite forwards every request th
 
 1. Open **New payment**, fill in the form and create a payment. The page for the new payment opens.
 2. Click **Simulate success**. The simulator sends a signed callback and the status changes to `SUCCESSFUL`.
-3. Open **Payments** to see it in the list, and use the status filter.
+3. Open **Payments** to see it in the list, and use the status filter. Once there are more than ten payments, **Previous** and **Next** appear at the bottom of the list. **Reset demo data** clears the list after you confirm.
 4. Open **Reconciliation**, paste a line such as `PAY-7F3K9Q2M8XWD,1500.00,SUCCESSFUL` using the reference of your payment, and run it.
 
 The **Guide** link in the top bar explains these steps inside the app.
 
 ## Running the tests
 
-The back end has 100 tests. Run them from the `backend` folder:
+The back end has 106 tests. Run them from the `backend` folder:
 
 ```bash
 ./mvnw verify
@@ -275,9 +303,9 @@ The tests do not need the `.env` file. They use a dummy secret from the test res
 | Kind | Tests | What they cover |
 |---|---|---|
 | Unit | 42 | The payment lifecycle, payment creation and duplicates, callbacks, HMAC signatures and reconciliation rules, with Mockito in place of the database |
-| Web layer | 34 | Every endpoint through Spring MockMvc: status codes, JSON bodies, validation messages and error responses |
-| Repository | 7 | The queries against a real H2 database: lookups, ordering, filtering and the unique constraint |
-| Full application | 17 | The whole app running: simultaneous duplicate requests, conflicting callbacks that arrive at the same moment, and the simulator with and without the `dev` profile |
+| Web layer | 38 | Every endpoint through Spring MockMvc: status codes, JSON bodies, validation messages and error responses |
+| Repository | 7 | The queries against a real H2 database: lookups, paging and ordering, filtering and the unique constraint |
+| Full application | 19 | The whole app running: simultaneous duplicate requests, conflicting callbacks that arrive at the same moment, and the simulator and demo data reset with and without the `dev` profile |
 
 The test for conflicting callbacks that arrive at the same moment runs 10 times, and each run is counted in the total.
 
@@ -293,7 +321,7 @@ npm run build
 
 GitHub Actions runs the workflow in `.github/workflows/ci.yml` on every push and every pull request. Two jobs run side by side:
 
-- **Back end:** sets up Java 21 (Temurin) with a Maven cache and runs `./mvnw -B verify`, which compiles the code and runs all 100 tests.
+- **Back end:** sets up Java 21 (Temurin) with a Maven cache and runs `./mvnw -B verify`, which compiles the code and runs all 106 tests.
 - **Front end:** sets up Node.js 22 with an npm cache, installs the exact versions from `package-lock.json` with `npm ci`, then runs `npm run lint` and `npm run build`. The lint step fails on warnings as well as errors.
 
 The badge at the top of this file shows the result of the latest run on `master`.
@@ -316,7 +344,7 @@ java-payment-application/
       exception/                 Exceptions and the global error handler
       repository/                Spring Data JPA repository
       service/                   Payment, callback, signature and reconciliation logic
-      simulator/                 Callback simulator for the dev profile
+      simulator/                 Callback simulator and demo data reset for the dev profile
     src/main/resources/          application.properties and application-dev.properties
     src/test/java/               Tests, in the same packages as the code they test
     src/test/resources/          Test-only settings
@@ -344,7 +372,6 @@ This is a small demonstration project, so some things a production payments syst
 - The payment endpoints have no client authentication. Only callbacks are protected, by their HMAC signature. Real merchants would need API keys or a similar scheme.
 - There is no real payment provider. The simulator in the `dev` profile stands in for one.
 - Reconciliation compares the provider records with all finished payments, not with one settlement day. A real reconciliation would work on a date range.
-- The payment list returns every payment, without paging.
 - The API does not allow cross-origin browser requests, because merchants are expected to call it from their own servers. The Vite proxy only exists for local development.
 
 ## Repository

@@ -1,13 +1,17 @@
 package com.martinmaina.payments.service;
 
 import java.security.SecureRandom;
-import java.util.List;
 import java.util.Optional;
 
 import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 
 import com.martinmaina.payments.dto.CreatePaymentRequest;
+import com.martinmaina.payments.dto.PageResponse;
 import com.martinmaina.payments.dto.PaymentResponse;
 import com.martinmaina.payments.entity.Payment;
 import com.martinmaina.payments.entity.PaymentStatus;
@@ -65,13 +69,13 @@ public class PaymentService {
                 .orElseThrow(() -> new PaymentNotFoundException(reference));
     }
 
-    public List<PaymentResponse> list(PaymentStatus status) {
-        List<Payment> payments = status == null
-                ? paymentRepository.findAllByOrderByCreatedAtDescIdDesc()
-                : paymentRepository.findAllByStatusOrderByCreatedAtDescIdDesc(status);
-        return payments.stream()
-                .map(PaymentResponse::from)
-                .toList();
+    public PageResponse<PaymentResponse> list(PaymentStatus status, int page, int size) {
+        // Newest first; the id breaks ties between payments created in the same millisecond
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt", "id"));
+        Page<Payment> payments = status == null
+                ? paymentRepository.findAll(pageable)
+                : paymentRepository.findAllByStatus(status, pageable);
+        return PageResponse.from(payments.map(PaymentResponse::from));
     }
 
     private CreateResult resolveDuplicate(Payment existing, CreatePaymentRequest request, String currency) {

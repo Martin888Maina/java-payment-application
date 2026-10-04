@@ -23,8 +23,12 @@ function Guide() {
         <li>
           <h3>Find a payment</h3>
           <p>
-            Payments are listed newest first. Filter the list by status, then click a reference to see the full
-            details.
+            Payments are listed newest first, ten to a page. Use Previous and Next at the bottom of the list to move
+            between pages, filter the list by status, then click a reference to see the full details.
+          </p>
+          <p className="hint">
+            To start again with an empty list, click Reset demo data and confirm. This deletes every payment and is only
+            available when the back end runs with the dev profile.
           </p>
           <Link to="/">Open Payments</Link>
         </li>
