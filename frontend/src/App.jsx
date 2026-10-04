@@ -7,15 +7,17 @@ import Reconciliation from './pages/Reconciliation.jsx'
 function Layout() {
   return (
     <>
-      <header>
-        <h1>Payments</h1>
-        <nav>
-          <NavLink to="/" end>Payments</NavLink>
-          <NavLink to="/payments/new">New payment</NavLink>
-          <NavLink to="/reconciliation">Reconciliation</NavLink>
-        </nav>
+      <header className="topbar">
+        <div className="container topbar-inner">
+          <h1 className="brand">Payments</h1>
+          <nav>
+            <NavLink to="/" end>Payments</NavLink>
+            <NavLink to="/payments/new">New payment</NavLink>
+            <NavLink to="/reconciliation">Reconciliation</NavLink>
+          </nav>
+        </div>
       </header>
-      <main>
+      <main className="container">
         <Outlet />
       </main>
     </>
