@@ -10,6 +10,45 @@ function lineErrors(fieldErrors, lines) {
   })
 }
 
+function ResultGroup({ title, items }) {
+  const show = (value) => value ?? '-'
+  const amount = (value) => (value == null ? '-' : formatNumber(value))
+
+  return (
+    <>
+      <h3>
+        {title} ({items.length})
+      </h3>
+      {items.length === 0 ? (
+        <p>None.</p>
+      ) : (
+        <table>
+          <thead>
+            <tr>
+              <th>Reference</th>
+              <th>Our amount</th>
+              <th>Provider amount</th>
+              <th>Our status</th>
+              <th>Provider status</th>
+            </tr>
+          </thead>
+          <tbody>
+            {items.map((item) => (
+              <tr key={item.reference}>
+                <td>{item.reference}</td>
+                <td>{amount(item.ourAmount)}</td>
+                <td>{amount(item.providerAmount)}</td>
+                <td>{show(item.ourStatus)}</td>
+                <td>{show(item.providerStatus)}</td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      )}
+    </>
+  )
+}
+
 function Reconciliation() {
   const [text, setText] = useState('')
   const [running, setRunning] = useState(false)
@@ -99,6 +138,11 @@ function Reconciliation() {
               </tr>
             </tbody>
           </table>
+          <ResultGroup title="Amount mismatches" items={result.amountMismatches} />
+          <ResultGroup title="Status mismatches" items={result.statusMismatches} />
+          <ResultGroup title="Missing on our side" items={result.missingOnOurSide} />
+          <ResultGroup title="Missing on provider side" items={result.missingOnProviderSide} />
+          <ResultGroup title="Matched" items={result.matched} />
         </>
       )}
     </>
