@@ -333,3 +333,14 @@ java-payment-application/
   LICENSE
   README.md
 ```
+
+## Limitations
+
+This is a small demonstration project, so some things a production payments system needs are left out on purpose:
+
+- Data is kept in an in-memory H2 database and is lost when the back end stops. A real system would use a persistent database with versioned migrations.
+- The payment endpoints have no client authentication. Only callbacks are protected, by their HMAC signature. Real merchants would need API keys or a similar scheme.
+- There is no real payment provider. The simulator in the `dev` profile stands in for one.
+- Reconciliation compares the provider records with all finished payments, not with one settlement day. A real reconciliation would work on a date range.
+- The payment list returns every payment, without paging.
+- The API does not allow cross-origin browser requests, because merchants are expected to call it from their own servers. The Vite proxy only exists for local development.
