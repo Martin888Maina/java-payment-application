@@ -1,6 +1,7 @@
 package com.martinmaina.payments.entity;
 
 import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
@@ -60,7 +61,7 @@ public class Payment {
     public Payment(String reference, String merchantReference, BigDecimal amount, String currency, String payerPhone) {
         this.reference = reference;
         this.merchantReference = merchantReference;
-        this.amount = amount;
+        this.amount = amount.setScale(2, RoundingMode.UNNECESSARY);
         this.currency = currency;
         this.payerPhone = payerPhone;
         this.status = PaymentStatus.PENDING;

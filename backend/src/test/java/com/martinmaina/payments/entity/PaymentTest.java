@@ -61,6 +61,21 @@ class PaymentTest {
         assertThat(payment.getProviderReference()).isNull();
     }
 
+    @Test
+    void storesAmountWithTwoDecimalPlaces() {
+        Payment payment = new Payment("PAY-AAAAAAAAAAAA", "INV-1001", new BigDecimal("1500"), "KES", "254712345678");
+
+        assertThat(payment.getAmount()).isEqualTo(new BigDecimal("1500.00"));
+        assertThat(payment.getAmount().scale()).isEqualTo(2);
+    }
+
+    @Test
+    void neverRoundsAnAmountWithMoreThanTwoDecimalPlaces() {
+        assertThatThrownBy(() -> new Payment("PAY-AAAAAAAAAAAA", "INV-1001", new BigDecimal("10.005"), "KES",
+                "254712345678"))
+                .isInstanceOf(ArithmeticException.class);
+    }
+
     private Payment newPayment() {
         return new Payment("PAY-AAAAAAAAAAAA", "INV-1001", new BigDecimal("1500.00"), "KES", "254712345678");
     }
