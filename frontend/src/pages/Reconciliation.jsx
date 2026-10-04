@@ -15,37 +15,39 @@ function ResultGroup({ title, items }) {
   const amount = (value) => (value == null ? '-' : formatNumber(value))
 
   return (
-    <>
+    <section className="result-group">
       <h3>
         {title} ({items.length})
       </h3>
       {items.length === 0 ? (
         <p>None.</p>
       ) : (
-        <table>
-          <thead>
-            <tr>
-              <th>Reference</th>
-              <th>Our amount</th>
-              <th>Provider amount</th>
-              <th>Our status</th>
-              <th>Provider status</th>
-            </tr>
-          </thead>
-          <tbody>
-            {items.map((item) => (
-              <tr key={item.reference}>
-                <td>{item.reference}</td>
-                <td>{amount(item.ourAmount)}</td>
-                <td>{amount(item.providerAmount)}</td>
-                <td>{show(item.ourStatus)}</td>
-                <td>{show(item.providerStatus)}</td>
+        <div className="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>Reference</th>
+                <th className="num">Our amount</th>
+                <th className="num">Provider amount</th>
+                <th>Our status</th>
+                <th>Provider status</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {items.map((item) => (
+                <tr key={item.reference}>
+                  <td>{item.reference}</td>
+                  <td className="num">{amount(item.ourAmount)}</td>
+                  <td className="num">{amount(item.providerAmount)}</td>
+                  <td>{show(item.ourStatus)}</td>
+                  <td>{show(item.providerStatus)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
-    </>
+    </section>
   )
 }
 
@@ -81,8 +83,10 @@ function Reconciliation() {
 
   return (
     <>
-      <h2>Reconciliation</h2>
-      <form onSubmit={run}>
+      <div className="page-header">
+        <h2>Reconciliation</h2>
+      </div>
+      <form className="form form-wide" onSubmit={run}>
         <p>
           <label htmlFor="records">Provider records, one per line: reference,amount,status</label>
           <textarea
@@ -93,7 +97,7 @@ function Reconciliation() {
             onChange={(event) => setText(event.target.value)}
           />
         </p>
-        <p>Example: PAY-7F3K9Q2M8XWD,1500.00,SUCCESSFUL</p>
+        <p className="hint">Example: PAY-7F3K9Q2M8XWD,1500.00,SUCCESSFUL</p>
         <p>
           <button type="submit" className="primary" disabled={running}>
             {running ? 'Running...' : 'Run reconciliation'}
@@ -101,43 +105,47 @@ function Reconciliation() {
         </p>
       </form>
       {errors.map((error) => (
-        <p key={error}>Error: {error}</p>
+        <p key={error} className="error">
+          Error: {error}
+        </p>
       ))}
       {result && (
         <>
-          <h3>Summary</h3>
-          <table className="summary">
-            <tbody>
-              <tr>
-                <th>Provider records</th>
-                <td>{result.summary.providerRecords}</td>
-              </tr>
-              <tr>
-                <th>Matched</th>
-                <td>{result.summary.matched}</td>
-              </tr>
-              <tr>
-                <th>Amount mismatches</th>
-                <td>{result.summary.amountMismatches}</td>
-              </tr>
-              <tr>
-                <th>Status mismatches</th>
-                <td>{result.summary.statusMismatches}</td>
-              </tr>
-              <tr>
-                <th>Missing on our side</th>
-                <td>{result.summary.missingOnOurSide}</td>
-              </tr>
-              <tr>
-                <th>Missing on provider side</th>
-                <td>{result.summary.missingOnProviderSide}</td>
-              </tr>
-              <tr>
-                <th>Matched amount</th>
-                <td>{formatNumber(result.summary.matchedAmount)}</td>
-              </tr>
-            </tbody>
-          </table>
+          <section className="result-group">
+            <h3>Summary</h3>
+            <table className="summary">
+              <tbody>
+                <tr>
+                  <th>Provider records</th>
+                  <td>{result.summary.providerRecords}</td>
+                </tr>
+                <tr>
+                  <th>Matched</th>
+                  <td>{result.summary.matched}</td>
+                </tr>
+                <tr>
+                  <th>Amount mismatches</th>
+                  <td>{result.summary.amountMismatches}</td>
+                </tr>
+                <tr>
+                  <th>Status mismatches</th>
+                  <td>{result.summary.statusMismatches}</td>
+                </tr>
+                <tr>
+                  <th>Missing on our side</th>
+                  <td>{result.summary.missingOnOurSide}</td>
+                </tr>
+                <tr>
+                  <th>Missing on provider side</th>
+                  <td>{result.summary.missingOnProviderSide}</td>
+                </tr>
+                <tr>
+                  <th>Matched amount</th>
+                  <td>{formatNumber(result.summary.matchedAmount)}</td>
+                </tr>
+              </tbody>
+            </table>
+          </section>
           <ResultGroup title="Amount mismatches" items={result.amountMismatches} />
           <ResultGroup title="Status mismatches" items={result.statusMismatches} />
           <ResultGroup title="Missing on our side" items={result.missingOnOurSide} />
