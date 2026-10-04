@@ -344,3 +344,11 @@ This is a small demonstration project, so some things a production payments syst
 - Reconciliation compares the provider records with all finished payments, not with one settlement day. A real reconciliation would work on a date range.
 - The payment list returns every payment, without paging.
 - The API does not allow cross-origin browser requests, because merchants are expected to call it from their own servers. The Vite proxy only exists for local development.
+
+## Repository
+
+https://github.com/Martin888Maina/java-payment-application
+
+## Licence
+
+This project is released under the MIT licence. See [LICENSE](LICENSE) for the full text.
