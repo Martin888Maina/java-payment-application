@@ -6,23 +6,21 @@ import { formatAmount, formatDate } from '../format.js'
 function PaymentList() {
   const [searchParams, setSearchParams] = useSearchParams()
   const status = searchParams.get('status') ?? ''
-  const [payments, setPayments] = useState([])
-  const [loading, setLoading] = useState(true)
-  const [error, setError] = useState(null)
+  const [result, setResult] = useState({ status: null, payments: [], error: null })
 
   useEffect(() => {
     // Ignores a slow response that arrives after the filter has changed again
     let ignore = false
-    setLoading(true)
-    setError(null)
     listPayments(status)
-      .then((data) => !ignore && setPayments(data))
-      .catch((e) => !ignore && setError(e.message))
-      .finally(() => !ignore && setLoading(false))
+      .then((payments) => !ignore && setResult({ status, payments, error: null }))
+      .catch((e) => !ignore && setResult({ status, payments: [], error: e.message }))
     return () => {
       ignore = true
     }
   }, [status])
+
+  const loading = result.status !== status
+  const { payments, error } = result
 
   function changeStatus(event) {
     const value = event.target.value
@@ -42,7 +40,7 @@ function PaymentList() {
         </select>
       </p>
       {loading && <p>Loading payments...</p>}
-      {error && <p>Error: {error}</p>}
+      {!loading && error && <p>Error: {error}</p>}
       {!loading && !error && payments.length === 0 && (
         <p>{status ? 'No payments with this status.' : 'No payments yet.'}</p>
       )}
