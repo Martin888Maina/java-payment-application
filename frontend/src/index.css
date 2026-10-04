@@ -85,6 +85,11 @@ textarea {
   width: 100%;
 }
 
+.field-error {
+  display: block;
+  margin-top: 4px;
+}
+
 button {
   background: #fff;
   border: 1px solid #000;

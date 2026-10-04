@@ -4,6 +4,26 @@ import { createPayment } from '../api.js'
 
 const emptyForm = { merchantReference: '', amount: '', currency: 'KES', payerPhone: '' }
 
+function Field({ name, label, error, ...inputProps }) {
+  return (
+    <p>
+      <label htmlFor={name}>{label}</label>
+      <input
+        id={name}
+        name={name}
+        aria-invalid={error ? 'true' : undefined}
+        aria-describedby={error ? `${name}-error` : undefined}
+        {...inputProps}
+      />
+      {error && (
+        <span id={`${name}-error`} className="field-error">
+          {error}
+        </span>
+      )}
+    </p>
+  )
+}
+
 function NewPayment() {
   const navigate = useNavigate()
   const [form, setForm] = useState(emptyForm)
@@ -12,6 +32,11 @@ function NewPayment() {
 
   function update(event) {
     setForm({ ...form, [event.target.name]: event.target.value })
+  }
+
+  function fieldError(name) {
+    const messages = error?.fieldErrors.filter((e) => e.field === name).map((e) => e.message) ?? []
+    return messages.join(', ')
   }
 
   async function submit(event) {
@@ -27,7 +52,7 @@ function NewPayment() {
       })
       navigate('/')
     } catch (e) {
-      setError(e.message)
+      setError({ message: e.message, fieldErrors: e.fieldErrors })
       setSubmitting(false)
     }
   }
@@ -36,29 +61,44 @@ function NewPayment() {
     <>
       <h2>New payment</h2>
       <form onSubmit={submit}>
-        <p>
-          <label htmlFor="merchantReference">Merchant reference</label>
-          <input id="merchantReference" name="merchantReference" value={form.merchantReference} onChange={update} />
-        </p>
-        <p>
-          <label htmlFor="amount">Amount</label>
-          <input id="amount" name="amount" inputMode="decimal" value={form.amount} onChange={update} />
-        </p>
-        <p>
-          <label htmlFor="currency">Currency</label>
-          <input id="currency" name="currency" maxLength={3} value={form.currency} onChange={update} />
-        </p>
-        <p>
-          <label htmlFor="payerPhone">Payer phone (2547XXXXXXXX)</label>
-          <input id="payerPhone" name="payerPhone" inputMode="numeric" value={form.payerPhone} onChange={update} />
-        </p>
+        <Field
+          name="merchantReference"
+          label="Merchant reference"
+          value={form.merchantReference}
+          onChange={update}
+          error={fieldError('merchantReference')}
+        />
+        <Field
+          name="amount"
+          label="Amount"
+          inputMode="decimal"
+          value={form.amount}
+          onChange={update}
+          error={fieldError('amount')}
+        />
+        <Field
+          name="currency"
+          label="Currency"
+          maxLength={3}
+          value={form.currency}
+          onChange={update}
+          error={fieldError('currency')}
+        />
+        <Field
+          name="payerPhone"
+          label="Payer phone (2547XXXXXXXX)"
+          inputMode="numeric"
+          value={form.payerPhone}
+          onChange={update}
+          error={fieldError('payerPhone')}
+        />
         <p>
           <button type="submit" className="primary" disabled={submitting}>
             {submitting ? 'Creating...' : 'Create payment'}
           </button>
         </p>
       </form>
-      {error && <p>Error: {error}</p>}
+      {error && <p>Error: {error.message}</p>}
     </>
   )
 }
