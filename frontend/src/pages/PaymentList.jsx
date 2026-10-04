@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { useSearchParams } from 'react-router'
+import { Link, useSearchParams } from 'react-router'
 import { listPayments } from '../api.js'
 import { formatAmount, formatDate } from '../format.js'
 
@@ -61,7 +61,9 @@ function PaymentList() {
           <tbody>
             {payments.map((payment) => (
               <tr key={payment.reference}>
-                <td>{payment.reference}</td>
+                <td>
+                  <Link to={`/payments/${payment.reference}`}>{payment.reference}</Link>
+                </td>
                 <td>{payment.merchantReference}</td>
                 <td>{formatAmount(payment.amount, payment.currency)}</td>
                 <td>{payment.payerPhone}</td>

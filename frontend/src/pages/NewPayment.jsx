@@ -44,13 +44,13 @@ function NewPayment() {
     setSubmitting(true)
     setError(null)
     try {
-      await createPayment({
+      const payment = await createPayment({
         merchantReference: form.merchantReference.trim(),
         amount: form.amount.trim(),
         currency: form.currency.trim() || null,
         payerPhone: form.payerPhone.trim(),
       })
-      navigate('/')
+      navigate(`/payments/${payment.reference}`)
     } catch (e) {
       setError({ message: e.message, fieldErrors: e.fieldErrors })
       setSubmitting(false)

@@ -85,6 +85,20 @@ textarea {
   width: 100%;
 }
 
+dl {
+  display: grid;
+  grid-template-columns: max-content 1fr;
+  gap: 6px 24px;
+}
+
+dt {
+  font-weight: bold;
+}
+
+dd {
+  margin: 0;
+}
+
 .field-error {
   display: block;
   margin-top: 4px;
