@@ -5,28 +5,29 @@ import { formatAmount, formatDate } from '../format.js'
 
 function PaymentDetail() {
   const { reference } = useParams()
-  const [payment, setPayment] = useState(null)
-  const [error, setError] = useState(null)
+  const [result, setResult] = useState({ reference: null, payment: null, error: null })
   const [simulating, setSimulating] = useState(false)
   const [simulateError, setSimulateError] = useState(null)
 
   useEffect(() => {
     let ignore = false
-    setPayment(null)
-    setError(null)
     getPayment(reference)
-      .then((data) => !ignore && setPayment(data))
-      .catch((e) => !ignore && setError(e.message))
+      .then((payment) => !ignore && setResult({ reference, payment, error: null }))
+      .catch((e) => !ignore && setResult({ reference, payment: null, error: e.message }))
     return () => {
       ignore = true
     }
   }, [reference])
 
+  const loaded = result.reference === reference
+  const payment = loaded ? result.payment : null
+  const error = loaded ? result.error : null
+
   async function simulate(status) {
     setSimulating(true)
     setSimulateError(null)
     try {
-      setPayment(await simulateCallback(reference, status))
+      setResult({ reference, payment: await simulateCallback(reference, status), error: null })
     } catch (e) {
       // The simulator route only exists when the back end runs with the dev profile
       const missing = e.status === 404 && e.message.startsWith('No endpoint matches')
