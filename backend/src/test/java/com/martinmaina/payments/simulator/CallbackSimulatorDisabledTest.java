@@ -32,4 +32,15 @@ class CallbackSimulatorDisabledTest {
 
         assertThat(status).isEqualTo(404);
     }
+
+    @Test
+    void demoDataResetDoesNotExistOutsideDevProfile() {
+        assertThat(context.getBeanNamesForType(DemoDataController.class)).isEmpty();
+
+        int status = RestClient.create().delete()
+                .uri("http://localhost:" + port + "/api/v1/dev/payments")
+                .exchange((request, response) -> response.getStatusCode().value());
+
+        assertThat(status).isEqualTo(404);
+    }
 }
