@@ -26,7 +26,7 @@ It covers the four parts of a basic payment flow: creating a payment request, re
 - **Reconciliation.** Compare the provider's records with our payments. The result lists matched records, amount mismatches, status mismatches, records missing on our side and records missing on the provider side, with totals.
 - **Consistent errors.** Every error uses the same JSON shape (RFC 9457 problem details), with a message per field for validation errors.
 - **Callback simulator.** A small endpoint that only exists in the `dev` profile. It stands in for a real provider during local testing.
-- **Web interface.** Pages to list, create and view payments, trigger the simulator and run a reconciliation.
+- **Web interface.** Pages to list, create and view payments, trigger the simulator and run a reconciliation, plus a short guide page that explains how to use the app.
 
 ## API endpoints
 
@@ -260,6 +260,8 @@ Open `http://localhost:5173`. During development, Vite forwards every request th
 3. Open **Payments** to see it in the list, and use the status filter.
 4. Open **Reconciliation**, paste a line such as `PAY-7F3K9Q2M8XWD,1500.00,SUCCESSFUL` using the reference of your payment, and run it.
 
+The **Guide** link in the top bar explains these steps inside the app.
+
 ## Running the tests
 
 The back end has 100 tests. Run them from the `backend` folder:
@@ -329,7 +331,7 @@ java-payment-application/
       format.js                  Amount and date formatting
       providerRecords.js         Reads pasted provider records
       index.css                  The only stylesheet
-      pages/                     Payment list, new payment, payment detail and reconciliation pages
+      pages/                     Payment list, new payment, payment detail, reconciliation and guide pages
   LICENSE
   README.md
 ```
