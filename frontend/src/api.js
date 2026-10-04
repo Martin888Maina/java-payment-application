@@ -18,10 +18,20 @@ async function request(path, options = {}) {
 
   const body = await response.json().catch(() => null)
   if (!response.ok) {
-    const message = body?.detail ?? `Request failed with status ${response.status}`
-    throw new ApiError(message, response.status, body?.errors ?? [])
+    throw new ApiError(errorMessage(response.status, body), response.status, body?.errors ?? [])
   }
   return body
+}
+
+function errorMessage(status, body) {
+  if (body?.detail) {
+    return body.detail
+  }
+  // The development proxy answers with an empty 502 when the API is not running
+  if (status >= 500) {
+    return 'Could not reach the server'
+  }
+  return `Request failed with status ${status}`
 }
 
 export function listPayments(status) {
