@@ -36,12 +36,15 @@ public class ReconciliationService {
                 .collect(Collectors.toMap(Payment::getReference, Function.identity()));
 
         List<ReconciliationItem> matched = new ArrayList<>();
+        List<ReconciliationItem> amountMismatches = new ArrayList<>();
         List<ReconciliationItem> missingOnOurSide = new ArrayList<>();
 
         for (ProviderRecord record : records) {
             Payment payment = ourPayments.get(record.reference());
             if (payment == null) {
                 missingOnOurSide.add(ReconciliationItem.providerOnly(record));
+            } else if (payment.getAmount().compareTo(record.amount()) != 0) {
+                amountMismatches.add(ReconciliationItem.of(payment, record));
             } else {
                 matched.add(ReconciliationItem.of(payment, record));
             }
@@ -51,8 +54,8 @@ public class ReconciliationService {
                 .map(ReconciliationItem::providerAmount)
                 .reduce(new BigDecimal("0.00"), BigDecimal::add);
 
-        ReconciliationSummary summary = new ReconciliationSummary(records.size(), matched.size(), 0, 0,
-                missingOnOurSide.size(), 0, matchedAmount);
-        return new ReconciliationResult(summary, matched, List.of(), List.of(), missingOnOurSide, List.of());
+        ReconciliationSummary summary = new ReconciliationSummary(records.size(), matched.size(),
+                amountMismatches.size(), 0, missingOnOurSide.size(), 0, matchedAmount);
+        return new ReconciliationResult(summary, matched, amountMismatches, List.of(), missingOnOurSide, List.of());
     }
 }
