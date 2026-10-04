@@ -1,8 +1,11 @@
 package com.martinmaina.payments.exception;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 
+import org.springframework.beans.TypeMismatchException;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -43,6 +46,14 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         return handleExceptionInternal(ex, problem, headers, status, request);
     }
 
+    @Override
+    protected ResponseEntity<Object> handleTypeMismatch(
+            TypeMismatchException ex, HttpHeaders headers, HttpStatusCode status, WebRequest request) {
+
+        ProblemDetail problem = ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, typeMismatchMessage(ex));
+        return handleExceptionInternal(ex, problem, headers, status, request);
+    }
+
     @ExceptionHandler(DuplicateProviderRecordException.class)
     public ProblemDetail handleDuplicateProviderRecord(DuplicateProviderRecordException ex) {
         return ProblemDetail.forStatusAndDetail(HttpStatus.BAD_REQUEST, ex.getMessage());
@@ -73,6 +84,17 @@ public class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             return "Field '" + fieldPath(mismatch.getPath()) + "' has a value of the wrong type";
         }
         return "Request body is missing or is not valid JSON";
+    }
+
+    private String typeMismatchMessage(TypeMismatchException ex) {
+        Class<?> requiredType = ex.getRequiredType();
+        if (requiredType != null && requiredType.isEnum()) {
+            String allowed = Arrays.stream(requiredType.getEnumConstants())
+                    .map(Object::toString)
+                    .collect(Collectors.joining(", "));
+            return "Parameter '" + ex.getPropertyName() + "' must be one of: " + allowed;
+        }
+        return "Parameter '" + ex.getPropertyName() + "' has an invalid value";
     }
 
     private String fieldPath(List<JacksonException.Reference> path) {
