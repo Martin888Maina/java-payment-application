@@ -257,3 +257,30 @@ Open `http://localhost:5173`. During development, Vite forwards every request th
 2. Click **Simulate success**. The simulator sends a signed callback and the status changes to `SUCCESSFUL`.
 3. Open **Payments** to see it in the list, and use the status filter.
 4. Open **Reconciliation**, paste a line such as `PAY-7F3K9Q2M8XWD,1500.00,SUCCESSFUL` using the reference of your payment, and run it.
+
+## Running the tests
+
+The back end has 100 tests. Run them from the `backend` folder:
+
+```bash
+./mvnw verify
+```
+
+The tests do not need the `.env` file. They use a dummy secret from the test resources.
+
+| Kind | Tests | What they cover |
+|---|---|---|
+| Unit | 42 | The payment lifecycle, payment creation and duplicates, callbacks, HMAC signatures and reconciliation rules, with Mockito in place of the database |
+| Web layer | 34 | Every endpoint through Spring MockMvc: status codes, JSON bodies, validation messages and error responses |
+| Repository | 7 | The queries against a real H2 database: lookups, ordering, filtering and the unique constraint |
+| Full application | 17 | The whole app running: simultaneous duplicate requests, conflicting callbacks that arrive at the same moment, and the simulator with and without the `dev` profile |
+
+The test for conflicting callbacks that arrive at the same moment runs 10 times, and each run is counted in the total.
+
+The front end has no automated tests. CI lints and builds it:
+
+```bash
+cd frontend
+npm run lint
+npm run build
+```
