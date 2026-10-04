@@ -18,20 +18,26 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.boot.webmvc.test.autoconfigure.WebMvcTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 
+import com.martinmaina.payments.config.CallbackProperties;
 import com.martinmaina.payments.dto.CreatePaymentRequest;
 import com.martinmaina.payments.dto.PaymentResponse;
 import com.martinmaina.payments.entity.PaymentStatus;
 import com.martinmaina.payments.exception.DuplicatePaymentException;
 import com.martinmaina.payments.exception.PaymentNotFoundException;
 import com.martinmaina.payments.service.PaymentService;
+import com.martinmaina.payments.service.SignatureVerifier;
 
 @WebMvcTest(PaymentController.class)
+@EnableConfigurationProperties(CallbackProperties.class)
+@Import(SignatureVerifier.class)
 class PaymentControllerTest {
 
     private static final String VALID_BODY = """
