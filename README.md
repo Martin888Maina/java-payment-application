@@ -295,3 +295,41 @@ GitHub Actions runs the workflow in `.github/workflows/ci.yml` on every push and
 - **Front end:** sets up Node.js 22 with an npm cache, installs the exact versions from `package-lock.json` with `npm ci`, then runs `npm run lint` and `npm run build`. The lint step fails on warnings as well as errors.
 
 The badge at the top of this file shows the result of the latest run on `master`.
+
+## Project structure
+
+```
+java-payment-application/
+  .github/workflows/ci.yml       CI workflow with a back end job and a front end job
+  backend/                       Spring Boot API
+    pom.xml                      Maven build and dependencies
+    mvnw, mvnw.cmd               Maven wrapper
+    .env.example                 Example of the callback secret setting
+    src/main/java/com/martinmaina/payments/
+      PaymentsApplication.java   Application entry point
+      config/                    Callback secret settings
+      controller/                REST controllers and the callback signature check
+      dto/                       Request and response records with validation rules
+      entity/                    Payment entity and its status lifecycle
+      exception/                 Exceptions and the global error handler
+      repository/                Spring Data JPA repository
+      service/                   Payment, callback, signature and reconciliation logic
+      simulator/                 Callback simulator for the dev profile
+    src/main/resources/          application.properties and application-dev.properties
+    src/test/java/               Tests, in the same packages as the code they test
+    src/test/resources/          Test-only settings
+  frontend/                      React app built with Vite
+    index.html
+    package.json                 Scripts and dependencies
+    vite.config.js               Development server and API proxy
+    src/
+      main.jsx                   Starts the app
+      App.jsx                    Routes and page layout
+      api.js                     Calls to the API and error handling
+      format.js                  Amount and date formatting
+      providerRecords.js         Reads pasted provider records
+      index.css                  The only stylesheet
+      pages/                     Payment list, new payment, payment detail and reconciliation pages
+  LICENSE
+  README.md
+```
